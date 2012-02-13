@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script type="text/javascript"
+	src="https://browserid.org/provisioning_api.js"></script>
+<script type="text/javascript">
+	navigator.id.beginProvisioning(function(email, cert_duration) {
+		console.log(email);
+		if (email == "test@browserid-i5y.heroku.com") {
+			navigator.id.genKeyPair(function(pubkey) {
+				var stringCert = JSON.stringify({
+					pubkey : pubkey,
+					duration : cert_duration
+				});
+				var oXHR = new XMLHttpRequest();
+				oXHR.open("POST", "sign", true);
+				oXHR.onreadystatechange = function(oEvent) {
+					if (oXHR.readyState === 4) {
+						if (oXHR.status === 200) {
+							console.log(JSON.parse(oXHR.responseText));
+						} else {
+							console.log("Error", oXHR.statusText);
+						}
+					}
+				};
+				oXHR.send(stringCert);
+
+				navigator.id.registerCertificate(r.cert);
+			});
+		}
+	});
+</script>
+</head>
+</html>

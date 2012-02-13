@@ -70,7 +70,7 @@ public class HelloWorld extends HttpServlet {
 				baos.write(next);
 				next = req.getInputStream().read();
 			}
-			System.out.println(new String(baos.toByteArray()));
+			System.out.println("sign: "+new String(baos.toByteArray()));
 			resp.setContentType("application/json");
 			new JSONStreamFactoryImpl().createObjectWriter(resp.getWriter())
 					.startObject().defineProperty("certificate")
