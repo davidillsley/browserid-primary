@@ -205,7 +205,7 @@ class JSONWriterImpl implements JSONWriter {
 			switch (c) {
 			case '\"': sb.append("\\\""); break;
 			case '\\': sb.append("\\\\"); break;
-			case '/': sb.append("\\/"); break;
+			//case '/': sb.append("\\/"); break;
 			case '\b': sb.append("\\b"); break;
 			case '\f': sb.append("\\f"); break;
 			case '\n': sb.append("\\n"); break;
