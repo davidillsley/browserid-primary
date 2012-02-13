@@ -1,3 +1,4 @@
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -33,10 +34,9 @@ public class HelloWorld extends HttpServlet {
 				throws ServletException, IOException {
 			resp.setContentType("application/json");
 			resp.addHeader("Cache-Control", "no-store, max-age=0");
-			ObjectWriter objectWriter = new JSONStreamFactoryImpl()
-					.createObjectWriter(resp.getWriter());
-			objectWriter.startObject().defineProperty("public-key")
-					.startObject().defineProperty("algorithm").literal("RS")
+			new JSONStreamFactoryImpl().createObjectWriter(resp.getWriter())
+					.startObject().defineProperty("public-key").startObject()
+					.defineProperty("algorithm").literal("RS")
 					.defineProperty("n").literal(n.toString())
 					.defineProperty("e").literal(e.toString()).endObject()
 					.defineProperty("authentication")
@@ -60,6 +60,24 @@ public class HelloWorld extends HttpServlet {
 		}
 	}
 
+	public static class SignServlet extends HttpServlet {
+		@Override
+		protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+				throws ServletException, IOException {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			int next = req.getInputStream().read();
+			while (next >= 0) {
+				baos.write(next);
+				next = req.getInputStream().read();
+			}
+			System.out.println(new String(baos.toByteArray()));
+			resp.setContentType("application/json");
+			new JSONStreamFactoryImpl().createObjectWriter(resp.getWriter())
+					.startObject().defineProperty("certificate")
+					.literal("certificate").endObject().close();
+		}
+	}
+
 	public static void main(String[] args) throws Exception {
 		Server server = new Server(Integer.valueOf(System.getenv("PORT")));
 		ServletContextHandler context = new ServletContextHandler(
@@ -71,9 +89,12 @@ public class HelloWorld extends HttpServlet {
 				"/.well-known/browserid");
 		context.addServlet(new ServletHolder(new ProvisionServlet()),
 				"/browserid/provision");
+		context.addServlet(new ServletHolder(new SignServlet()),
+				"/browserid/sign");
 
 		// Init public/private key...
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
+		gen.initialize(512);
 		KeyPair keyPair = gen.generateKeyPair();
 		RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
 		n = publicKey.getModulus();
