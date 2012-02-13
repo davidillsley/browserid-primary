@@ -6,7 +6,7 @@
 <script type="text/javascript">
 	navigator.id.beginProvisioning(function(email, cert_duration) {
 		console.log(email);
-		if (email == "test@browserid-i5y.heroku.com") {
+		if (email == "test@browserid-i5y.herokuapp.com") {
 			navigator.id.genKeyPair(function(pubkey) {
 				var stringCert = JSON.stringify({
 					pubkey : pubkey,
