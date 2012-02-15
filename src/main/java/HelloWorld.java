@@ -105,6 +105,7 @@ public class HelloWorld extends HttpServlet {
 					.literal("browserid-i5y.herokuapp.com")
 					.defineProperty("exp")
 					.literal(System.currentTimeMillis() + 1000 * 60 * 60)
+					.defineProperty("iat").literal(System.currentTimeMillis())
 					.defineProperty("public-key").startObject();
 			for (Entry<String, String> entry : details.entrySet()) {
 				readyForCert = readyForCert.defineProperty(entry.getKey())
