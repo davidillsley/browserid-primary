@@ -10,7 +10,7 @@ import java.util.Stack;
 import org.i5y.json.stream.JSONEvent;
 import org.i5y.json.stream.JSONParser;
 
-class JSONParserImpl implements JSONParser {
+public class JSONParserImpl implements JSONParser {
 
 	private JSONEvent current = JSONEvent.INPUT_START;
 	private String errorMessage = null;
