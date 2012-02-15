@@ -8,13 +8,14 @@
 		console.log(email);
 		if (email == "test@browserid-i5y.herokuapp.com") {
 			navigator.id.genKeyPair(function(pubkey) {
-		var pubkey = {"aa":"bb","cc":"dd"};	
-		$.ajax({
+				$.ajax({
 					url : "/browserid/sign",
 					type : "post",
-					contentType: 'application/json',
+					contentType : 'application/json',
 					dataType : "json",
-					data : JSON.stringify({"pubkey":pubkey}),
+					data : JSON.stringify({
+						"pubkey" : pubkey
+					}),
 					success : function(data, textStatus, jqXHR) {
 						console.log(JSON.stringify(data));
 						navigator.id.registerCertificate(data.certificate);
