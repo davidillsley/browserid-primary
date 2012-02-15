@@ -114,7 +114,7 @@ public class HelloWorld extends HttpServlet {
 					.defineProperty("email")
 					.literal("test@browserid-i5y.herokuapp.com").endObject()
 					.endObject().close();
-			String header = encodeURLBase64("{\"alg\":\"RS256\"}");
+			String header = encodeURLBase64("{\"alg\":\"RS64\"}");
 			String body = encodeURLBase64(new String(baoss.toByteArray()));
 			String total = header + "." + body;
 			String signature;
