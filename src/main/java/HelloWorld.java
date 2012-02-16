@@ -115,7 +115,7 @@ public class HelloWorld extends HttpServlet {
 					.defineProperty("email")
 					.literal("test@browserid-i5y.herokuapp.com").endObject()
 					.endObject().close();
-			String header = encodeURLBase64("{\"alg\":\"RS128\"}");
+			String header = encodeURLBase64("{\"alg\":\"RS256\"}");
 			String body = encodeURLBase64(new String(baoss.toByteArray()));
 			String total = header + "." + body;
 			String signature;
@@ -161,7 +161,7 @@ public class HelloWorld extends HttpServlet {
 
 		// Init public/private key...
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
-		gen.initialize(1024);
+		gen.initialize(2048);
 		KeyPair keyPair = gen.generateKeyPair();
 		RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
 		privateKey = keyPair.getPrivate();
