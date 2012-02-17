@@ -71,6 +71,21 @@ public class HelloWorld extends HttpServlet {
 		}
 	}
 
+
+	public static class SignInServlet extends HttpServlet {
+		@Override
+		protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+				throws ServletException, IOException {
+			InputStream is = getClass().getResourceAsStream("signin.html");
+			int nextByte = is.read();
+			while (nextByte >= 0) {
+				resp.getOutputStream().write(nextByte);
+				nextByte = is.read();
+			}
+			resp.getOutputStream().close();
+		}
+	}
+	
 	public static class SignServlet extends HttpServlet {
 		@Override
 		protected void doPost(HttpServletRequest req, HttpServletResponse resp)
@@ -156,7 +171,9 @@ public class HelloWorld extends HttpServlet {
 				"/.well-known/browserid");
 		context.addServlet(new ServletHolder(new ProvisionServlet()),
 				"/browserid/provision");
-		context.addServlet(new ServletHolder(new SignServlet()),
+		context.addServlet(new ServletHolder(new ProvisionServlet()),
+				"/browserid/sign_in");
+		context.addServlet(new ServletHolder(new SignInServlet()),
 				"/browserid/sign");
 
 		// Init public/private key...
