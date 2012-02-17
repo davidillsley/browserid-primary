@@ -27,7 +27,7 @@
 			});
 		}else{
 			console.log("need to sign in");
-			window.setTimeout(navigator.id.raiseProvisioningFailure,1000);
+			window.setTimeout("navigator.id.raiseProvisioningFailure('need to sign in')",1000);
 		}
 	});
 </script>
