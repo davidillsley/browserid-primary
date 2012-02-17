@@ -51,7 +51,7 @@ public class HelloWorld extends HttpServlet {
 					.defineProperty("n").literal(n.toString())
 					.defineProperty("e").literal(e.toString()).endObject()
 					.defineProperty("authentication")
-					.literal("/browserid/login")
+					.literal("/browserid/sign_in")
 					.defineProperty("provisioning")
 					.literal("/browserid/provision").endObject().close();
 		}
@@ -172,7 +172,7 @@ public class HelloWorld extends HttpServlet {
 		context.addServlet(new ServletHolder(new ProvisionServlet()),
 				"/browserid/provision");
 		context.addServlet(new ServletHolder(new SignInServlet()),
-				"/browserid/login");
+				"/browserid/sign_in");
 		context.addServlet(new ServletHolder(new SignServlet()),
 				"/browserid/sign");
 
