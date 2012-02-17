@@ -171,9 +171,9 @@ public class HelloWorld extends HttpServlet {
 				"/.well-known/browserid");
 		context.addServlet(new ServletHolder(new ProvisionServlet()),
 				"/browserid/provision");
-		context.addServlet(new ServletHolder(new ProvisionServlet()),
-				"/browserid/login");
 		context.addServlet(new ServletHolder(new SignInServlet()),
+				"/browserid/login");
+		context.addServlet(new ServletHolder(new SignServlet()),
 				"/browserid/sign");
 
 		// Init public/private key...
