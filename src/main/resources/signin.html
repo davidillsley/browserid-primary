@@ -3,6 +3,13 @@
 <head>
 <script	src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
 <script type="text/javascript"	src="https://browserid.org/provisioning_api.js"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+  navigator.id.beginAuthentication(function(email) {
+	console.log("beginning....");  
+  });
+  }
+</script>
 </head>
 <body>
 Please sign in...
