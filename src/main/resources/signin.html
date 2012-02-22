@@ -2,12 +2,16 @@
 <html>
 <head>
 <script	src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-<script type="text/javascript"	src="https://browserid.org/provisioning_api.js"></script>
+<script type="text/javascript" src="https://browserid.org/include.js"></script>
 <script type="text/javascript">
-console.log("beginning....");  
+	console.log("beginning....");
+	$(document).ready(function() {
+		navigator.id.beginAuthentication(function(email) {
+			console.log("beginning authentication"+email);
+		})
+	})
 </script>
 </head>
-<body>
-Please sign in...
+<body>Please sign in...
 </body>
 </html>
