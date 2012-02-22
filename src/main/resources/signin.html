@@ -6,6 +6,7 @@
 <script type="text/javascript">
 	console.log("beginning....");
 	$(document).ready(function() {
+		console.log("ready called");
 		navigator.id.beginAuthentication(function(email) {
 			console.log("beginning authentication"+email);
 		})
