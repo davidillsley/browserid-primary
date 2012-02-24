@@ -1,6 +1,5 @@
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.math.BigInteger;
 import java.security.KeyPair;
@@ -20,7 +19,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.bouncycastle.util.encoders.Base64;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -31,17 +29,11 @@ import org.i5y.json.stream.JSONTypeSafeWriters.ObjectWriter;
 import org.i5y.json.stream.impl.JSONParserImpl;
 import org.i5y.json.stream.impl.JSONStreamFactoryImpl;
 
-public class HelloWorld extends HttpServlet {
+public class HelloWorld {
 
 	private static BigInteger n;
 	private static BigInteger e;
 	private static PrivateKey privateKey;
-
-	@Override
-	protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-			throws ServletException, IOException {
-		resp.getWriter().print("Hello from Java!\n");
-	}
 
 	public static class PublicServlet extends HttpServlet {
 		@Override
@@ -61,35 +53,6 @@ public class HelloWorld extends HttpServlet {
 		}
 	}
 
-	public static class ProvisionServlet extends HttpServlet {
-		@Override
-		protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-				throws ServletException, IOException {
-			InputStream is = getClass().getResourceAsStream("provision.html");
-			int nextByte = is.read();
-			while (nextByte >= 0) {
-				resp.getOutputStream().write(nextByte);
-				nextByte = is.read();
-			}
-			resp.getOutputStream().close();
-		}
-	}
-
-
-	public static class SignInServlet extends HttpServlet {
-		@Override
-		protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-				throws ServletException, IOException {
-			InputStream is = getClass().getResourceAsStream("signin.html");
-			int nextByte = is.read();
-			while (nextByte >= 0) {
-				resp.getOutputStream().write(nextByte);
-				nextByte = is.read();
-			}
-			resp.getOutputStream().close();
-		}
-	}
-	
 	public static class SignServlet extends HttpServlet {
 		@Override
 		protected void doPost(HttpServletRequest req, HttpServletResponse resp)
@@ -169,22 +132,21 @@ public class HelloWorld extends HttpServlet {
 		ServletContextHandler context = new ServletContextHandler(
 				ServletContextHandler.SESSIONS);
 		context.setContextPath("/");
-		context.addServlet(new ServletHolder(new HelloWorld()), "/*");
 		context.addServlet(new ServletHolder(new PublicServlet()),
 				"/.well-known/browserid");
 		context.addServlet(new ServletHolder(new SignServlet()),
 				"/browserid/sign");
 
-        ResourceHandler resource_handler = new ResourceHandler();
-        resource_handler.setDirectoriesListed(true);
-        resource_handler.setWelcomeFiles(new String[]{ "index.html" });
- 
-        resource_handler.setResourceBase("target/classes");
-		
-        HandlerList handlers = new HandlerList();
-        handlers.setHandlers(new Handler[] { resource_handler, context });
-        server.setHandler(handlers);
-        
+		ResourceHandler resource_handler = new ResourceHandler();
+		resource_handler.setDirectoriesListed(false);
+		resource_handler.setWelcomeFiles(new String[] { "index.html" });
+
+		resource_handler.setResourceBase("target/classes");
+
+		HandlerList handlers = new HandlerList();
+		handlers.setHandlers(new Handler[] { resource_handler, context });
+		server.setHandler(handlers);
+
 		// Init public/private key...
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
 		gen.initialize(2048);
