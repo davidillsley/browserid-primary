@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script	src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+<script type="text/javascript" src="https://browserid.org/include.js"></script>
+<script type="text/javascript">
+	console.log("beginning....");
+	$(document).ready(function() {
+		console.log("ready called");
+		navigator.id.beginAuthentication(function(email) {
+			console.log("beginning authentication"+email);
+		})
+	})
+</script>
+</head>
+<body>Please sign in...
+</body>
+</html>

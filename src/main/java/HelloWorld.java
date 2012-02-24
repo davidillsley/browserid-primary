@@ -18,7 +18,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.bouncycastle.util.encoders.Base64;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.i5y.json.stream.JSONEvent;
@@ -51,9 +55,9 @@ public class HelloWorld extends HttpServlet {
 					.defineProperty("n").literal(n.toString())
 					.defineProperty("e").literal(e.toString()).endObject()
 					.defineProperty("authentication")
-					.literal("/browserid/sign_in")
+					.literal("/browserid/signin.html")
 					.defineProperty("provisioning")
-					.literal("/browserid/provision").endObject().close();
+					.literal("/browserid/provision.html").endObject().close();
 		}
 	}
 
@@ -165,17 +169,22 @@ public class HelloWorld extends HttpServlet {
 		ServletContextHandler context = new ServletContextHandler(
 				ServletContextHandler.SESSIONS);
 		context.setContextPath("/");
-		server.setHandler(context);
 		context.addServlet(new ServletHolder(new HelloWorld()), "/*");
 		context.addServlet(new ServletHolder(new PublicServlet()),
 				"/.well-known/browserid");
-		context.addServlet(new ServletHolder(new ProvisionServlet()),
-				"/browserid/provision");
-		context.addServlet(new ServletHolder(new SignInServlet()),
-				"/browserid/sign_in");
 		context.addServlet(new ServletHolder(new SignServlet()),
 				"/browserid/sign");
 
+        ResourceHandler resource_handler = new ResourceHandler();
+        resource_handler.setDirectoriesListed(true);
+        resource_handler.setWelcomeFiles(new String[]{ "index.html" });
+ 
+        resource_handler.setResourceBase(".");
+		
+        HandlerList handlers = new HandlerList();
+        handlers.setHandlers(new Handler[] { resource_handler, context });
+        server.setHandler(handlers);
+        
 		// Init public/private key...
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
 		gen.initialize(2048);
