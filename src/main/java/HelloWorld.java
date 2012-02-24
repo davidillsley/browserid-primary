@@ -179,7 +179,7 @@ public class HelloWorld extends HttpServlet {
         resource_handler.setDirectoriesListed(true);
         resource_handler.setWelcomeFiles(new String[]{ "index.html" });
  
-        resource_handler.setResourceBase(".");
+        resource_handler.setResourceBase("target/classes");
 		
         HandlerList handlers = new HandlerList();
         handlers.setHandlers(new Handler[] { resource_handler, context });
