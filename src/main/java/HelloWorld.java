@@ -34,6 +34,9 @@ public class HelloWorld {
 	private static BigInteger n;
 	private static BigInteger e;
 	private static PrivateKey privateKey;
+	private static String domain;
+	private static String username;
+	private static String passwordHash;
 
 	public static class PublicServlet extends HttpServlet {
 		@Override
@@ -129,6 +132,10 @@ public class HelloWorld {
 
 	public static void main(String[] args) throws Exception {
 		Server server = new Server(Integer.valueOf(System.getenv("PORT")));
+		domain = System.getenv("DOMAIN");
+		username = System.getenv("USER_NAME");
+		passwordHash = System.getenv("PASSWORD_HASH");
+		
 		ServletContextHandler context = new ServletContextHandler(
 				ServletContextHandler.SESSIONS);
 		context.setContextPath("/");
