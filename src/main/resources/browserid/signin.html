@@ -70,6 +70,11 @@
 				},
 				success : function(data, textStatus, jqXHR) {
 					console.log(JSON.stringify(data));
+					if(data.success){
+						navigator.id.completeAuthentication();
+					}else{
+						$("#error").text("login failed... feel free to try again");
+					}
 				},
 				error : function(jqXHR, textStatus, errorThrown) {
 					console.log(textStatus);
@@ -86,5 +91,6 @@
 			type="password" name="password" id="password"> <input type="button"
 			id="login" value="login">
 	</form>
+	<div id="error"></div>
 </body>
 </html>
