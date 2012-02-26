@@ -186,6 +186,7 @@ public class HelloWorld {
 		Server server = new Server(Integer.valueOf(System.getenv("PORT")));
 		domain = System.getenv("DOMAIN");
 		username = System.getenv("USER_NAME");
+		System.out.println("Email supported: "+username+"@"+domain);
 		passwordHash = new String(Base64.decode(System.getenv("PASSWORD_HASH")));
 
 		ServletContextHandler context = new ServletContextHandler(
