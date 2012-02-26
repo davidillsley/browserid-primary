@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script	src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+<script type="text/javascript"	src="https://browserid.org/provisioning_api.js"></script>
+<script type="text/javascript">
+	var fail = navigator.id.raiseProvisioningFailure;
+	navigator.id.beginProvisioning(function(email, cert_duration) {
+
+		console.log("need to sign in");
+		fail('user is not authenticated as target user');
+		console.log("called fail: " + fail);
+	});
+</script>
+</head>
+</html>

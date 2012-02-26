@@ -4,33 +4,26 @@
 <script	src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
 <script type="text/javascript"	src="https://browserid.org/provisioning_api.js"></script>
 <script type="text/javascript">
-    var fail = navigator.id.raiseProvisioningFailure;
+	var fail = navigator.id.raiseProvisioningFailure;
 	navigator.id.beginProvisioning(function(email, cert_duration) {
-		console.log(email);
-		if (email == "test@browserid-i5y.herokuapp.com") {
-			navigator.id.genKeyPair(function(pubkey) {
-				$.ajax({
-					url : "/browserid/sign",
-					type : "post",
-					contentType : 'application/json',
-					dataType : "json",
-					data : JSON.stringify({
-						"pubkey" : pubkey
-					}),
-					success : function(data, textStatus, jqXHR) {
-						console.log(JSON.stringify(data));
-						navigator.id.registerCertificate(data.certificate);
-					},
-					error : function(jqXHR, textStatus, errorThrown) {
-						console.log(textStatus);
-					}
-				});
+		navigator.id.genKeyPair(function(pubkey) {
+			$.ajax({
+				url : "/browserid/sign",
+				type : "post",
+				contentType : 'application/json',
+				dataType : "json",
+				data : JSON.stringify({
+					"pubkey" : pubkey
+				}),
+				success : function(data, textStatus, jqXHR) {
+					console.log(JSON.stringify(data));
+					navigator.id.registerCertificate(data.certificate);
+				},
+				error : function(jqXHR, textStatus, errorThrown) {
+					console.log(textStatus);
+				}
 			});
-		}else{
-			console.log("need to sign in");
-			fail('user is not authenticated as target user');
-			console.log("called fail: "+fail);
-		}
+		});
 	});
 </script>
 </head>

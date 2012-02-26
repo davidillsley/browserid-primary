@@ -28,6 +28,7 @@ import org.i5y.json.stream.JSONTypeSafeWriters.InsideObject;
 import org.i5y.json.stream.JSONTypeSafeWriters.ObjectWriter;
 import org.i5y.json.stream.impl.JSONParserImpl;
 import org.i5y.json.stream.impl.JSONStreamFactoryImpl;
+import org.mindrot.jbcrypt.BCrypt;
 
 public class HelloWorld {
 
@@ -52,7 +53,45 @@ public class HelloWorld {
 					.defineProperty("authentication")
 					.literal("/browserid/signin.html")
 					.defineProperty("provisioning")
-					.literal("/browserid/provision.html").endObject().close();
+					.literal("/browserid/provision").endObject().close();
+		}
+	}
+
+	public static class ProvisionServlet extends HttpServlet {
+		@Override
+		protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+				throws ServletException, IOException {
+			if ("true".equals(req.getSession().getAttribute("authentication"))) {
+				req.getRequestDispatcher("/browserid/provision.html").forward(
+						req, resp);
+			} else {
+				req.getRequestDispatcher("/browserid/provisionfail.html")
+						.forward(req, resp);
+			}
+		}
+	}
+
+	public static class SignInServlet extends HttpServlet {
+		@Override
+		protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+				throws ServletException, IOException {
+			String email = req.getParameter("email");
+			String password = req.getParameter("password");
+			String emailUser = email.split("@")[0];
+			String emailDomain = email.split("@")[1];
+			System.out
+					.println("Signing in... " + emailUser + " " + emailDomain);
+			if (!username.equalsIgnoreCase(emailUser)) {
+				throw new IllegalArgumentException("wrong user");
+			}
+			if (!domain.equalsIgnoreCase(emailDomain)) {
+				throw new IllegalArgumentException("wrong domain");
+			}
+			if (BCrypt.checkpw(password, passwordHash)) {
+				req.getSession().setAttribute("authenticated", "true");
+			} else {
+				throw new IllegalArgumentException("incorrect password");
+			}
 		}
 	}
 
@@ -60,64 +99,69 @@ public class HelloWorld {
 		@Override
 		protected void doPost(HttpServletRequest req, HttpServletResponse resp)
 				throws ServletException, IOException {
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			int next = req.getInputStream().read();
-			while (next >= 0) {
-				baos.write(next);
-				next = req.getInputStream().read();
-			}
-			System.out.println("sign: " + new String(baos.toByteArray()));
-			resp.setContentType("application/json");
-			JSONParserImpl jpi = new JSONParserImpl(new String(
-					baos.toByteArray()));
-			while (jpi.next() != JSONEvent.PROPERTY_NAME
-					&& !"pubkey".equals(jpi.string()))
-				;
-			Map<String, String> details = new HashMap<String, String>();
-			while (jpi.next() != JSONEvent.OBJECT_END) {
-				if (jpi.current() == JSONEvent.PROPERTY_NAME) {
-					String propertyName = jpi.string();
-					jpi.advance();
-					String propertyValue = jpi.string();
-					details.put(propertyName, propertyValue);
+			if ("true".equals(req.getSession().getAttribute("authentication"))) {
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				int next = req.getInputStream().read();
+				while (next >= 0) {
+					baos.write(next);
+					next = req.getInputStream().read();
 				}
+				System.out.println("sign: " + new String(baos.toByteArray()));
+				resp.setContentType("application/json");
+				JSONParserImpl jpi = new JSONParserImpl(new String(
+						baos.toByteArray()));
+				while (jpi.next() != JSONEvent.PROPERTY_NAME
+						&& !"pubkey".equals(jpi.string()))
+					;
+				Map<String, String> details = new HashMap<String, String>();
+				while (jpi.next() != JSONEvent.OBJECT_END) {
+					if (jpi.current() == JSONEvent.PROPERTY_NAME) {
+						String propertyName = jpi.string();
+						jpi.advance();
+						String propertyValue = jpi.string();
+						details.put(propertyName, propertyValue);
+					}
+				}
+				ByteArrayOutputStream baoss = new ByteArrayOutputStream();
+				ObjectWriter objectWriter = new JSONStreamFactoryImpl()
+						.createObjectWriter(new OutputStreamWriter(baoss));
+				InsideObject<InsideObject<ObjectWriter>> readyForCert = objectWriter
+						.startObject().defineProperty("iss").literal(domain)
+						.defineProperty("exp")
+						.literal(System.currentTimeMillis() + 1000 * 60 * 60)
+						.defineProperty("iat")
+						.literal(System.currentTimeMillis())
+						.defineProperty("public-key").startObject();
+				for (Entry<String, String> entry : details.entrySet()) {
+					readyForCert = readyForCert.defineProperty(entry.getKey())
+							.literal(entry.getValue());
+				}
+				readyForCert.endObject().defineProperty("principal")
+						.startObject().defineProperty("email")
+						.literal(username + "@" + domain).endObject()
+						.endObject().close();
+				String header = encodeURLBase64("{\"alg\":\"RS256\"}");
+				String body = encodeURLBase64(new String(baoss.toByteArray()));
+				String total = header + "." + body;
+				String signature;
+				try {
+					Signature sig = Signature.getInstance("SHA256withRSA");
+					sig.initSign(privateKey);
+					sig.update(total.getBytes());
+					byte[] sign = sig.sign();
+					signature = encodeURLBase64(sign);
+				} catch (Exception e) {
+					e.printStackTrace();
+					throw new IOException(e);
+				}
+				System.out.println("signed: " + total + "." + signature);
+				new JSONStreamFactoryImpl()
+						.createObjectWriter(resp.getWriter()).startObject()
+						.defineProperty("certificate")
+						.literal(total + "." + signature).endObject().close();
+			} else {
+				// Fail hard...
 			}
-			ByteArrayOutputStream baoss = new ByteArrayOutputStream();
-			ObjectWriter objectWriter = new JSONStreamFactoryImpl()
-					.createObjectWriter(new OutputStreamWriter(baoss));
-			InsideObject<InsideObject<ObjectWriter>> readyForCert = objectWriter
-					.startObject().defineProperty("iss")
-					.literal("browserid-i5y.herokuapp.com")
-					.defineProperty("exp")
-					.literal(System.currentTimeMillis() + 1000 * 60 * 60)
-					.defineProperty("iat").literal(System.currentTimeMillis())
-					.defineProperty("public-key").startObject();
-			for (Entry<String, String> entry : details.entrySet()) {
-				readyForCert = readyForCert.defineProperty(entry.getKey())
-						.literal(entry.getValue());
-			}
-			readyForCert.endObject().defineProperty("principal").startObject()
-					.defineProperty("email")
-					.literal("test@browserid-i5y.herokuapp.com").endObject()
-					.endObject().close();
-			String header = encodeURLBase64("{\"alg\":\"RS256\"}");
-			String body = encodeURLBase64(new String(baoss.toByteArray()));
-			String total = header + "." + body;
-			String signature;
-			try {
-				Signature sig = Signature.getInstance("SHA256withRSA");
-				sig.initSign(privateKey);
-				sig.update(total.getBytes());
-				byte[] sign = sig.sign();
-				signature = encodeURLBase64(sign);
-			} catch (Exception e) {
-				e.printStackTrace();
-				throw new IOException(e);
-			}
-			System.out.println("signed: " + total + "." + signature);
-			new JSONStreamFactoryImpl().createObjectWriter(resp.getWriter())
-					.startObject().defineProperty("certificate")
-					.literal(total + "." + signature).endObject().close();
 		}
 	}
 
@@ -135,7 +179,7 @@ public class HelloWorld {
 		domain = System.getenv("DOMAIN");
 		username = System.getenv("USER_NAME");
 		passwordHash = System.getenv("PASSWORD_HASH");
-		
+
 		ServletContextHandler context = new ServletContextHandler(
 				ServletContextHandler.SESSIONS);
 		context.setContextPath("/");
@@ -143,6 +187,8 @@ public class HelloWorld {
 				"/.well-known/browserid");
 		context.addServlet(new ServletHolder(new SignServlet()),
 				"/browserid/sign");
+		context.addServlet(new ServletHolder(new ProvisionServlet()),
+				"/browserid/provision");
 
 		ResourceHandler resource_handler = new ResourceHandler();
 		resource_handler.setDirectoriesListed(false);
