@@ -62,7 +62,7 @@ public class HelloWorld {
 		protected void doPost(HttpServletRequest req, HttpServletResponse resp)
 				throws ServletException, IOException {
 			if ("true".equals(req.getSession().getAttribute("authentication"))) {
-				req.getRequestDispatcher("/browserid/provision.html").forward(
+				req.getRequestDispatcher("/browserid/provision2.html").forward(
 						req, resp);
 			} else {
 				req.getRequestDispatcher("/browserid/provisionfail.html")
@@ -188,7 +188,7 @@ public class HelloWorld {
 		context.addServlet(new ServletHolder(new SignServlet()),
 				"/browserid/sign");
 		context.addServlet(new ServletHolder(new ProvisionServlet()),
-				"/browserid/provision");
+				"/browserid/provision.html");
 
 		ResourceHandler resource_handler = new ResourceHandler();
 		resource_handler.setDirectoriesListed(false);
