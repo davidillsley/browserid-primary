@@ -62,7 +62,7 @@ public class HelloWorld {
 		protected void doGet(HttpServletRequest req, HttpServletResponse resp)
 				throws ServletException, IOException {
 			resp.setStatus(307);
-			if ("true".equals(req.getSession().getAttribute("authentication"))) {
+			if ("true".equals(req.getSession().getAttribute("authenticated"))) {
 				resp.setHeader("Location", "https://" + domain
 						+ "/browserid/provision2.html");
 			} else {
@@ -107,7 +107,7 @@ public class HelloWorld {
 		@Override
 		protected void doPost(HttpServletRequest req, HttpServletResponse resp)
 				throws ServletException, IOException {
-			if ("true".equals(req.getSession().getAttribute("authentication"))) {
+			if ("true".equals(req.getSession().getAttribute("authenticated"))) {
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
 				int next = req.getInputStream().read();
 				while (next >= 0) {
