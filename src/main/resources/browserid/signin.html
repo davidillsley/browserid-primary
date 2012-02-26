@@ -58,7 +58,8 @@
 			console.log("beginning authentication" + email);
 			$("#hiddenemail").val(email);
 		})
-		$("#login").click(function() {
+		$("form").submit(function(e) {
+            e.preventDefault();
 			console.log("login clicked...");
 			$.ajax({
 				url : "/browserid/signin",
@@ -92,7 +93,7 @@
 	Please sign in...
 	<form>
 		<input type="hidden" name="email" id="hiddenemail"> <input
-			type="password" name="password" id="password"> <input type="button"
+			type="password" name="password" id="password"> <input type="submit"
 			id="login" value="login">
 			<input type="button"
 			id="cancel" value="cancel">
