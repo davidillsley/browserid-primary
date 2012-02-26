@@ -70,7 +70,8 @@
 				},
 				success : function(data, textStatus, jqXHR) {
 					console.log(JSON.stringify(data));
-					if(data.success){
+					console.log(data.success);
+					if(data.success == true){
 						navigator.id.completeAuthentication();
 					}else{
 						$("#error").text("login failed... feel free to try again");
