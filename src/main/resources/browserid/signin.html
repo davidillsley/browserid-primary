@@ -70,7 +70,7 @@
 				},
 				success : function(data, textStatus, jqXHR) {
 					console.log(JSON.stringify(data));
-					console.log(data.success);
+					console.log(data["success"]);
 					if(data.success == true){
 						navigator.id.completeAuthentication();
 					}else{
