@@ -199,6 +199,8 @@ public class HelloWorld {
 		context.addServlet(new ServletHolder(new SignInServlet()),
 				"/browserid/signin");
 		context.addServlet(new ServletHolder(new ProvisionServlet()),
+				"/browserid/provision");
+		context.addServlet(new ServletHolder(new ProvisionServlet()),
 				"/browserid/provision.html");
 
 		ResourceHandler resource_handler = new ResourceHandler();
