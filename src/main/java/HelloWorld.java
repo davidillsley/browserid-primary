@@ -82,17 +82,22 @@ public class HelloWorld {
 			String emailDomain = email.split("@")[1];
 			System.out
 					.println("Signing in... " + emailUser + " " + emailDomain);
+			resp.setContentType("application/json");
+			boolean success = false;
+			String errorMessage = "";
 			if (!username.equalsIgnoreCase(emailUser)) {
 				throw new IllegalArgumentException("wrong user");
-			}
-			if (!domain.equalsIgnoreCase(emailDomain)) {
+			} else if (!domain.equalsIgnoreCase(emailDomain)) {
 				throw new IllegalArgumentException("wrong domain");
-			}
-			if (BCrypt.checkpw(password, passwordHash)) {
+			} else if (BCrypt.checkpw(password, passwordHash)) {
 				req.getSession().setAttribute("authenticated", "true");
 			} else {
 				throw new IllegalArgumentException("incorrect password");
 			}
+			new JSONStreamFactoryImpl().createObjectWriter(resp.getWriter())
+					.startObject().defineProperty("succes").literal(success)
+					.defineProperty("message").literal(errorMessage)
+					.endObject().close();
 		}
 	}
 
