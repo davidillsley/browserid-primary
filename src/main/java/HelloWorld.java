@@ -97,7 +97,7 @@ public class HelloWorld {
 				errorMessage = "incorrect password";
 			}
 			new JSONStreamFactoryImpl().createObjectWriter(resp.getWriter())
-					.startObject().defineProperty("succes").literal(success)
+					.startObject().defineProperty("success").literal(success)
 					.defineProperty("message").literal(errorMessage)
 					.endObject().close();
 		}
