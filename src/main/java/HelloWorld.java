@@ -188,6 +188,8 @@ public class HelloWorld {
 				"/.well-known/browserid");
 		context.addServlet(new ServletHolder(new SignServlet()),
 				"/browserid/sign");
+		context.addServlet(new ServletHolder(new SignInServlet()),
+				"/browserid/signin");
 		context.addServlet(new ServletHolder(new ProvisionServlet()),
 				"/browserid/provision.html");
 
