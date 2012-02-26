@@ -86,13 +86,14 @@ public class HelloWorld {
 			boolean success = false;
 			String errorMessage = "";
 			if (!username.equalsIgnoreCase(emailUser)) {
-				throw new IllegalArgumentException("wrong user");
+				errorMessage = "wrong user";
 			} else if (!domain.equalsIgnoreCase(emailDomain)) {
-				throw new IllegalArgumentException("wrong domain");
+				errorMessage = "wrong domain";
 			} else if (BCrypt.checkpw(password, passwordHash)) {
 				req.getSession().setAttribute("authenticated", "true");
+				success = true;
 			} else {
-				throw new IllegalArgumentException("incorrect password");
+				errorMessage = "incorrect password";
 			}
 			new JSONStreamFactoryImpl().createObjectWriter(resp.getWriter())
 					.startObject().defineProperty("succes").literal(success)
