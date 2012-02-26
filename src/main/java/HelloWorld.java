@@ -93,6 +93,7 @@ public class HelloWorld {
 				req.getSession().setAttribute("authenticated", "true");
 				success = true;
 			} else {
+				System.out.println("password: "+password+" hash: "+passwordHash);
 				errorMessage = "incorrect password";
 			}
 			new JSONStreamFactoryImpl().createObjectWriter(resp.getWriter())
