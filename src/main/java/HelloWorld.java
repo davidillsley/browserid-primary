@@ -59,7 +59,7 @@ public class HelloWorld {
 
 	public static class ProvisionServlet extends HttpServlet {
 		@Override
-		protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+		protected void doGet(HttpServletRequest req, HttpServletResponse resp)
 				throws ServletException, IOException {
 			if ("true".equals(req.getSession().getAttribute("authentication"))) {
 				req.getRequestDispatcher("/browserid/provision2.html").forward(
