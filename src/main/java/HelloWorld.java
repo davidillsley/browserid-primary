@@ -61,12 +61,13 @@ public class HelloWorld {
 		@Override
 		protected void doGet(HttpServletRequest req, HttpServletResponse resp)
 				throws ServletException, IOException {
+			resp.setStatus(307);
 			if ("true".equals(req.getSession().getAttribute("authentication"))) {
-				req.getRequestDispatcher("/browserid/provision2.html").forward(
-						req, resp);
+				resp.setHeader("Location", "https://" + domain
+						+ "/browserid/provision2.html");
 			} else {
-				req.getRequestDispatcher("/browserid/provisionfail.html")
-						.forward(req, resp);
+				resp.setHeader("Location", "https://" + domain
+						+ "/browserid/provisionfail.html");
 			}
 		}
 	}
