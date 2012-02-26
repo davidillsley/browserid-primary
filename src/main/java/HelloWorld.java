@@ -179,7 +179,7 @@ public class HelloWorld {
 		Server server = new Server(Integer.valueOf(System.getenv("PORT")));
 		domain = System.getenv("DOMAIN");
 		username = System.getenv("USER_NAME");
-		passwordHash = System.getenv("PASSWORD_HASH");
+		passwordHash = new String(Base64.decode(System.getenv("PASSWORD_HASH")));
 
 		ServletContextHandler context = new ServletContextHandler(
 				ServletContextHandler.SESSIONS);
