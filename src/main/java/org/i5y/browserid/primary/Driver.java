@@ -1,3 +1,4 @@
+package org.i5y.browserid.primary;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -30,7 +31,7 @@ import org.i5y.json.stream.impl.JSONParserImpl;
 import org.i5y.json.stream.impl.JSONStreamFactoryImpl;
 import org.mindrot.jbcrypt.BCrypt;
 
-public class HelloWorld {
+public class Driver {
 
 	private static BigInteger n;
 	private static BigInteger e;
