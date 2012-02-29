@@ -64,10 +64,10 @@ public class HelloWorld {
 			resp.setStatus(307);
 			if ("true".equals(req.getSession().getAttribute("authenticated"))) {
 				resp.setHeader("Location", "https://" + domain
-						+ "/browserid/provision2.html");
+						+ "/provision.html");
 			} else {
 				resp.setHeader("Location", "https://" + domain
-						+ "/browserid/provisionfail.html");
+						+ "/provisionfail.html");
 			}
 		}
 	}
@@ -195,13 +195,11 @@ public class HelloWorld {
 		context.addServlet(new ServletHolder(new PublicServlet()),
 				"/.well-known/browserid");
 		context.addServlet(new ServletHolder(new SignServlet()),
-				"/browserid/sign");
+				"/sign");
 		context.addServlet(new ServletHolder(new SignInServlet()),
-				"/browserid/signin");
+				"/signin");
 		context.addServlet(new ServletHolder(new ProvisionServlet()),
-				"/browserid/provision");
-		context.addServlet(new ServletHolder(new ProvisionServlet()),
-				"/browserid/provision.html");
+				"/provision");
 
 		ResourceHandler resource_handler = new ResourceHandler();
 		resource_handler.setDirectoriesListed(false);
