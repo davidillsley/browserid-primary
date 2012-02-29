@@ -2,7 +2,7 @@
 <html>
 <head>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-<script type="text/javascript" src="https://browserid.org/authentication_api.js"></script>
+<script src="https://browserid.org/authentication_api.js"></script>
 <script type="text/javascript">
 	console.log("beginning....");
 	$(document).ready(function() {
@@ -10,6 +10,9 @@
 		navigator.id.beginAuthentication(function(email) {
 			console.log("beginning authentication" + email);
 			$("#hiddenemail").val(email);
+			if(email != ''){
+			  $("#signin").show();
+			}
 		})
 		$("form").submit(function(e) {
             e.preventDefault();
@@ -41,8 +44,13 @@
 		});
 	})
 </script>
+<style type="text/css">
+#signin{
+display: none;
+}</style>
 </head>
 <body>
+	<div id="signin" style="display: none">
 	Please sign in...
 	<form>
 		<input type="hidden" name="email" id="hiddenemail"> <input
@@ -51,6 +59,8 @@
 			<input type="button"
 			id="cancel" value="cancel">
 	</form>
+	</div>
+	
 	<div id="error"></div>
 </body>
 </html>
