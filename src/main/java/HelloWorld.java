@@ -51,7 +51,7 @@ public class HelloWorld {
 					.defineProperty("n").literal(n.toString())
 					.defineProperty("e").literal(e.toString()).endObject()
 					.defineProperty("authentication")
-					.literal("/browserid/signin.html")
+					.literal("/")
 					.defineProperty("provisioning")
 					.literal("/browserid/provision").endObject().close();
 		}
