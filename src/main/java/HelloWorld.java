@@ -53,7 +53,7 @@ public class HelloWorld {
 					.defineProperty("authentication")
 					.literal("/")
 					.defineProperty("provisioning")
-					.literal("/browserid/provision").endObject().close();
+					.literal("/provision").endObject().close();
 		}
 	}
 
