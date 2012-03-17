@@ -63,6 +63,7 @@ public class Driver {
 		protected void doGet(HttpServletRequest req, HttpServletResponse resp)
 				throws ServletException, IOException {
 			resp.setStatus(200);
+			resp.setContentType("text/html");
 			if ("true".equals(req.getSession().getAttribute("authenticated"))) {
 				req.getRequestDispatcher("/provision.html").include(req, resp);
 			} else {
