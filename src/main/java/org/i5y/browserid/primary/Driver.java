@@ -1,5 +1,8 @@
 package org.i5y.browserid.primary;
+
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.math.BigInteger;
@@ -11,6 +14,9 @@ import java.security.interfaces.RSAPublicKey;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -36,9 +42,8 @@ public class Driver {
 	private static BigInteger n;
 	private static BigInteger e;
 	private static PrivateKey privateKey;
-	private static String domain;
-	private static String username;
-	private static String passwordHash;
+
+	private static ConcurrentMap<String, String> emailToPasswordHashes;
 
 	public static class PublicServlet extends HttpServlet {
 		@Override
@@ -51,10 +56,9 @@ public class Driver {
 					.defineProperty("algorithm").literal("RS")
 					.defineProperty("n").literal(n.toString())
 					.defineProperty("e").literal(e.toString()).endObject()
-					.defineProperty("authentication")
-					.literal("/")
-					.defineProperty("provisioning")
-					.literal("/provision").endObject().close();
+					.defineProperty("authentication").literal("/")
+					.defineProperty("provisioning").literal("/provision")
+					.endObject().close();
 		}
 	}
 
@@ -67,7 +71,8 @@ public class Driver {
 			if ("true".equals(req.getSession().getAttribute("authenticated"))) {
 				req.getRequestDispatcher("/provision.html").include(req, resp);
 			} else {
-				req.getRequestDispatcher("/provisionfail.html").include(req, resp);
+				req.getRequestDispatcher("/provisionfail.html").include(req,
+						resp);
 			}
 		}
 	}
@@ -78,22 +83,22 @@ public class Driver {
 				throws ServletException, IOException {
 			String email = req.getParameter("email");
 			String password = req.getParameter("password");
-			String emailUser = email.split("@")[0];
-			String emailDomain = email.split("@")[1];
-			System.out
-					.println("Signing in... " + emailUser + " " + emailDomain);
+
+			System.out.println("Signing in... " + email);
 			resp.setContentType("application/json");
 			boolean success = false;
 			String errorMessage = "";
-			if (!username.equalsIgnoreCase(emailUser)) {
-				errorMessage = "wrong user";
-			} else if (!domain.equalsIgnoreCase(emailDomain)) {
-				errorMessage = "wrong domain";
+			String passwordHash = emailToPasswordHashes
+					.get(email.toLowerCase());
+			if (passwordHash == null) {
+				errorMessage = "email not recognised";
 			} else if (BCrypt.checkpw(password, passwordHash)) {
 				req.getSession().setAttribute("authenticated", "true");
+				req.getSession().setAttribute("email", email);
 				success = true;
 			} else {
-				System.out.println("password: "+password+" hash: "+passwordHash);
+				System.out.println("password: " + password + " hash: "
+						+ passwordHash);
 				errorMessage = "incorrect password";
 			}
 			new JSONStreamFactoryImpl().createObjectWriter(resp.getWriter())
@@ -108,6 +113,7 @@ public class Driver {
 		protected void doPost(HttpServletRequest req, HttpServletResponse resp)
 				throws ServletException, IOException {
 			if ("true".equals(req.getSession().getAttribute("authenticated"))) {
+				String email = (String) req.getSession().getAttribute("email");
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
 				int next = req.getInputStream().read();
 				while (next >= 0) {
@@ -134,8 +140,8 @@ public class Driver {
 				ObjectWriter objectWriter = new JSONStreamFactoryImpl()
 						.createObjectWriter(new OutputStreamWriter(baoss));
 				InsideObject<InsideObject<ObjectWriter>> readyForCert = objectWriter
-						.startObject().defineProperty("iss").literal(domain)
-						.defineProperty("exp")
+						.startObject().defineProperty("iss")
+						.literal(email.split("@")[1]).defineProperty("exp")
 						.literal(System.currentTimeMillis() + 1000 * 60 * 60)
 						.defineProperty("iat")
 						.literal(System.currentTimeMillis())
@@ -145,9 +151,8 @@ public class Driver {
 							.literal(entry.getValue());
 				}
 				readyForCert.endObject().defineProperty("principal")
-						.startObject().defineProperty("email")
-						.literal(username + "@" + domain).endObject()
-						.endObject().close();
+						.startObject().defineProperty("email").literal(email)
+						.endObject().endObject().close();
 				String header = encodeURLBase64("{\"alg\":\"RS256\"}");
 				String body = encodeURLBase64(new String(baoss.toByteArray()));
 				String total = header + "." + body;
@@ -183,32 +188,51 @@ public class Driver {
 	}
 
 	public static void main(String[] args) throws Exception {
-		Server server = new Server(Integer.valueOf(System.getenv("PORT")));
-		domain = System.getenv("DOMAIN");
-		username = System.getenv("USER_NAME");
-		System.out.println("Email supported: "+username+"@"+domain);
-		passwordHash = new String(Base64.decode(System.getenv("PASSWORD_HASH")));
+		String customConfigfile = System.getenv("BROWSERID_CONFIG");
+		final File configFile;
+		if (customConfigfile != null) {
+			configFile = new File(customConfigfile);
+		} else {
+			configFile = new File(System.getProperty("user.home"),
+					".browseridprimary.properties");
+		}
+		System.out.println(System.getProperty("user.dir"));
+		Properties config = new Properties();
+		config.load(new FileInputStream(configFile));
+		int port = Integer.valueOf(config.getProperty("port", "5000"));
+		Server server = new Server(port);
+
+		emailToPasswordHashes = new ConcurrentHashMap<String, String>();
+
+		for (Entry<Object, Object> entry : config.entrySet()) {
+			String key = (String) entry.getKey();
+			if (key.startsWith("email.")) {
+				String email = key.substring(6).toLowerCase();
+				String value = (String) entry.getValue();
+				String passwordHash = new String(Base64.decode(value));
+				emailToPasswordHashes.put(email, passwordHash);
+				System.out.println("email supported: " + email);
+			}
+		}
 
 		ServletContextHandler context = new ServletContextHandler(
 				ServletContextHandler.SESSIONS);
 		context.setContextPath("/");
-		
+
 		context.addServlet(new ServletHolder(new PublicServlet()),
 				"/.well-known/browserid");
-		context.addServlet(new ServletHolder(new SignServlet()),
-				"/sign");
-		context.addServlet(new ServletHolder(new SignInServlet()),
-				"/signin");
+		context.addServlet(new ServletHolder(new SignServlet()), "/sign");
+		context.addServlet(new ServletHolder(new SignInServlet()), "/signin");
 		context.addServlet(new ServletHolder(new ProvisionServlet()),
 				"/provision");
-		
-		ServletHolder defaultServletHolder = new ServletHolder(new DefaultServlet());
+
+		ServletHolder defaultServletHolder = new ServletHolder(
+				new DefaultServlet());
 		defaultServletHolder.setInitParameter("resourceBase", "target/classes");
 		context.addServlet(defaultServletHolder, "/");
-		
 
 		HandlerList handlers = new HandlerList();
-		handlers.setHandlers(new Handler[] {  context });
+		handlers.setHandlers(new Handler[] { context });
 		server.setHandler(handlers);
 
 		// Init public/private key...
