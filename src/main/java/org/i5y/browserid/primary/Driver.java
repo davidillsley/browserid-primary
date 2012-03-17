@@ -21,7 +21,7 @@ import org.bouncycastle.util.encoders.Base64;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.i5y.json.stream.JSONEvent;
@@ -62,13 +62,10 @@ public class Driver {
 		@Override
 		protected void doGet(HttpServletRequest req, HttpServletResponse resp)
 				throws ServletException, IOException {
-			resp.setStatus(307);
 			if ("true".equals(req.getSession().getAttribute("authenticated"))) {
-				resp.setHeader("Location", "https://" + domain
-						+ "/provision.html");
+				req.getRequestDispatcher("/provision.html").forward(req, resp);
 			} else {
-				resp.setHeader("Location", "https://" + domain
-						+ "/provisionfail.html");
+				req.getRequestDispatcher("/provisionfail.html").forward(req, resp);
 			}
 		}
 	}
@@ -193,6 +190,7 @@ public class Driver {
 		ServletContextHandler context = new ServletContextHandler(
 				ServletContextHandler.SESSIONS);
 		context.setContextPath("/");
+		
 		context.addServlet(new ServletHolder(new PublicServlet()),
 				"/.well-known/browserid");
 		context.addServlet(new ServletHolder(new SignServlet()),
@@ -201,15 +199,14 @@ public class Driver {
 				"/signin");
 		context.addServlet(new ServletHolder(new ProvisionServlet()),
 				"/provision");
-
-		ResourceHandler resource_handler = new ResourceHandler();
-		resource_handler.setDirectoriesListed(false);
-		resource_handler.setWelcomeFiles(new String[] { "index.html" });
-
-		resource_handler.setResourceBase("target/classes");
+		
+		ServletHolder defaultServletHolder = new ServletHolder(new DefaultServlet());
+		defaultServletHolder.setInitParameter("resourceBase", "target/classes");
+		context.addServlet(defaultServletHolder, "/");
+		
 
 		HandlerList handlers = new HandlerList();
-		handlers.setHandlers(new Handler[] { resource_handler, context });
+		handlers.setHandlers(new Handler[] {  context });
 		server.setHandler(handlers);
 
 		// Init public/private key...
