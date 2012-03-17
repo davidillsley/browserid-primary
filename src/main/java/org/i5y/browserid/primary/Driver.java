@@ -62,10 +62,11 @@ public class Driver {
 		@Override
 		protected void doGet(HttpServletRequest req, HttpServletResponse resp)
 				throws ServletException, IOException {
+			resp.setStatus(200);
 			if ("true".equals(req.getSession().getAttribute("authenticated"))) {
-				req.getRequestDispatcher("/provision.html").forward(req, resp);
+				req.getRequestDispatcher("/provision.html").include(req, resp);
 			} else {
-				req.getRequestDispatcher("/provisionfail.html").forward(req, resp);
+				req.getRequestDispatcher("/provisionfail.html").include(req, resp);
 			}
 		}
 	}
