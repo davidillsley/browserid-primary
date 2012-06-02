@@ -1,23 +1,27 @@
 package org.i5y.browserid.primary;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
+import java.io.StringWriter;
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.Signature;
 import java.security.interfaces.RSAPublicKey;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import javax.json.JsonBuilder;
+import javax.json.JsonBuilder.JsonBuildable;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonReader;
+import javax.json.JsonWriter;
+import javax.json.stream.JsonGenerator;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -30,11 +34,6 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.i5y.json.stream.JSONEvent;
-import org.i5y.json.stream.JSONTypeSafeWriters.InsideObject;
-import org.i5y.json.stream.JSONTypeSafeWriters.ObjectWriter;
-import org.i5y.json.stream.impl.JSONParserImpl;
-import org.i5y.json.stream.impl.JSONStreamFactoryImpl;
 import org.mindrot.jbcrypt.BCrypt;
 
 public class Driver {
@@ -51,14 +50,11 @@ public class Driver {
 				throws ServletException, IOException {
 			resp.setContentType("application/json");
 			resp.addHeader("Cache-Control", "no-store, max-age=0");
-			new JSONStreamFactoryImpl().createObjectWriter(resp.getWriter())
-					.startObject().defineProperty("public-key").startObject()
-					.defineProperty("algorithm").literal("RS")
-					.defineProperty("n").literal(n.toString())
-					.defineProperty("e").literal(e.toString()).endObject()
-					.defineProperty("authentication").literal("/")
-					.defineProperty("provisioning").literal("/provision")
-					.endObject().close();
+			new JsonGenerator(resp.getWriter()).beginObject()
+					.beginObject("public-key").add("algorithm", "RS")
+					.add("n", n.toString()).add("e", e.toString()).endObject()
+					.add("authentication", "/")
+					.add("provisioning", "/provision").endObject().close();
 		}
 	}
 
@@ -101,9 +97,8 @@ public class Driver {
 						+ passwordHash);
 				errorMessage = "incorrect password";
 			}
-			new JSONStreamFactoryImpl().createObjectWriter(resp.getWriter())
-					.startObject().defineProperty("success").literal(success)
-					.defineProperty("message").literal(errorMessage)
+			new JsonGenerator(resp.getWriter()).beginObject()
+					.add("success", success).add("message", errorMessage)
 					.endObject().close();
 		}
 	}
@@ -114,47 +109,36 @@ public class Driver {
 				throws ServletException, IOException {
 			if ("true".equals(req.getSession().getAttribute("authenticated"))) {
 				String email = (String) req.getSession().getAttribute("email");
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				int next = req.getInputStream().read();
-				while (next >= 0) {
-					baos.write(next);
-					next = req.getInputStream().read();
-				}
-				System.out.println("sign: " + new String(baos.toByteArray()));
 				resp.setContentType("application/json");
-				JSONParserImpl jpi = new JSONParserImpl(new String(
-						baos.toByteArray()));
-				while (jpi.next() != JSONEvent.PROPERTY_NAME
-						&& !"pubkey".equals(jpi.string()))
-					;
-				Map<String, String> details = new HashMap<String, String>();
-				while (jpi.next() != JSONEvent.OBJECT_END) {
-					if (jpi.current() == JSONEvent.PROPERTY_NAME) {
-						String propertyName = jpi.string();
-						jpi.advance();
-						String propertyValue = jpi.string();
-						details.put(propertyName, propertyValue);
-					}
-				}
-				ByteArrayOutputStream baoss = new ByteArrayOutputStream();
-				ObjectWriter objectWriter = new JSONStreamFactoryImpl()
-						.createObjectWriter(new OutputStreamWriter(baoss));
-				InsideObject<InsideObject<ObjectWriter>> readyForCert = objectWriter
-						.startObject().defineProperty("iss")
-						.literal(email.split("@")[1]).defineProperty("exp")
-						.literal(System.currentTimeMillis() + 1000 * 60 * 60)
-						.defineProperty("iat")
-						.literal(System.currentTimeMillis())
-						.defineProperty("public-key").startObject();
-				for (Entry<String, String> entry : details.entrySet()) {
-					readyForCert = readyForCert.defineProperty(entry.getKey())
-							.literal(entry.getValue());
-				}
-				readyForCert.endObject().defineProperty("principal")
-						.startObject().defineProperty("email").literal(email)
-						.endObject().endObject().close();
+
+				JsonObject wholeBody = (JsonObject) new JsonReader(
+						req.getReader()).readObject();
+				System.out.println("sign: " + wholeBody);
+
+				JsonObject pubkey = wholeBody.getValue("pubkey",
+						JsonObject.class);
+
+				JsonObjectBuilder<JsonBuildable<JsonObject>> beginObject = new JsonBuilder()
+						.beginObject();
+				beginObject
+						.add("iss", email.split("@")[1])
+						.add("exp", System.currentTimeMillis() + 1000 * 60 * 60)
+						.add("iat", System.currentTimeMillis());
+
+				beginObject.add("public-key", pubkey);
+
+				beginObject.beginObject("principal").add("email", email)
+						.endObject();
+
+				JsonObject obj = beginObject.endObject().build();
+
+				StringWriter sw = new StringWriter();
+				JsonWriter writer = new JsonWriter(sw);
+				writer.writeObject(obj);
+				writer.close();
+
 				String header = encodeURLBase64("{\"alg\":\"RS256\"}");
-				String body = encodeURLBase64(new String(baoss.toByteArray()));
+				String body = encodeURLBase64(sw.toString());
 				String total = header + "." + body;
 				String signature;
 				try {
@@ -168,10 +152,9 @@ public class Driver {
 					throw new IOException(e);
 				}
 				System.out.println("signed: " + total + "." + signature);
-				new JSONStreamFactoryImpl()
-						.createObjectWriter(resp.getWriter()).startObject()
-						.defineProperty("certificate")
-						.literal(total + "." + signature).endObject().close();
+				new JsonGenerator(resp.getWriter()).beginObject()
+						.add("certificate", total + "." + signature)
+						.endObject().close();
 			} else {
 				// Fail hard...
 			}
@@ -196,7 +179,6 @@ public class Driver {
 			configFile = new File(System.getProperty("user.home"),
 					".browseridprimary.properties");
 		}
-		System.out.println(System.getProperty("user.dir"));
 		Properties config = new Properties();
 		config.load(new FileInputStream(configFile));
 		int port = Integer.valueOf(config.getProperty("port", "5000"));
