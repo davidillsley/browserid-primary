@@ -179,6 +179,10 @@ public class Driver {
 			configFile = new File(System.getProperty("user.home"),
 					".browseridprimary.properties");
 		}
+		// Format:
+		//port=<postnumber>
+		//email.email1@domain.com=<passwordhash>
+		//email.email2@domain.com=<passwordhash>
 		Properties config = new Properties();
 		config.load(new FileInputStream(configFile));
 		int port = Integer.valueOf(config.getProperty("port", "5000"));
