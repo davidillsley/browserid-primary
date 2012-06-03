@@ -1,5 +1,6 @@
 package org.i5y.browserid.primary;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -37,24 +38,30 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.mindrot.jbcrypt.BCrypt;
 
 public class Driver {
-
-	private static BigInteger n;
-	private static BigInteger e;
-	private static PrivateKey privateKey;
-
-	private static ConcurrentMap<String, String> emailToPasswordHashes;
-
 	public static class PublicServlet extends HttpServlet {
+		private final String result;
+
+		public PublicServlet(BigInteger n, BigInteger e) {
+			StringWriter sw = new StringWriter();
+			Closeable jg = new JsonGenerator(sw).beginObject()
+					.beginObject("public-key").add("algorithm", "RS")
+					.add("n", n.toString()).add("e", e.toString()).endObject()
+					.add("authentication", "/")
+					.add("provisioning", "/provision").endObject();
+			try {
+				jg.close();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+			result = sw.toString();
+		}
+
 		@Override
 		protected void doGet(HttpServletRequest req, HttpServletResponse resp)
 				throws ServletException, IOException {
 			resp.setContentType("application/json");
 			resp.addHeader("Cache-Control", "no-store, max-age=0");
-			new JsonGenerator(resp.getWriter()).beginObject()
-					.beginObject("public-key").add("algorithm", "RS")
-					.add("n", n.toString()).add("e", e.toString()).endObject()
-					.add("authentication", "/")
-					.add("provisioning", "/provision").endObject().close();
+			resp.getWriter().write(result);
 		}
 	}
 
@@ -74,6 +81,12 @@ public class Driver {
 	}
 
 	public static class SignInServlet extends HttpServlet {
+		private final ConcurrentMap<String, String> emailToPasswordHashes;
+
+		public SignInServlet(ConcurrentMap<String, String> emailToPasswordHashes) {
+			this.emailToPasswordHashes = emailToPasswordHashes;
+		}
+
 		@Override
 		protected void doPost(HttpServletRequest req, HttpServletResponse resp)
 				throws ServletException, IOException {
@@ -104,6 +117,12 @@ public class Driver {
 	}
 
 	public static class SignServlet extends HttpServlet {
+		private final PrivateKey privateKey;
+
+		public SignServlet(PrivateKey privateKey) {
+			this.privateKey = privateKey;
+		}
+
 		@Override
 		protected void doPost(HttpServletRequest req, HttpServletResponse resp)
 				throws ServletException, IOException {
@@ -159,15 +178,15 @@ public class Driver {
 				// Fail hard...
 			}
 		}
-	}
 
-	private static String encodeURLBase64(byte[] input) {
-		String encoded = new String(Base64.encode(input));
-		return encoded.replace('+', '-').replace('/', '_').replace("=", "");
-	}
+		private static String encodeURLBase64(byte[] input) {
+			String encoded = new String(Base64.encode(input));
+			return encoded.replace('+', '-').replace('/', '_').replace("=", "");
+		}
 
-	private static String encodeURLBase64(String input) {
-		return encodeURLBase64(input.getBytes());
+		private static String encodeURLBase64(String input) {
+			return encodeURLBase64(input.getBytes());
+		}
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -180,15 +199,15 @@ public class Driver {
 					".browseridprimary.properties");
 		}
 		// Format:
-		//port=<postnumber>
-		//email.email1@domain.com=<passwordhash>
-		//email.email2@domain.com=<passwordhash>
+		// port=<portnumber>
+		// email.email1@domain.com=<passwordhash>
+		// email.email2@domain.com=<passwordhash>
 		Properties config = new Properties();
 		config.load(new FileInputStream(configFile));
 		int port = Integer.valueOf(config.getProperty("port", "5000"));
 		Server server = new Server(port);
 
-		emailToPasswordHashes = new ConcurrentHashMap<String, String>();
+		ConcurrentMap<String, String> emailToPasswordHashes = new ConcurrentHashMap<String, String>();
 
 		for (Entry<Object, Object> entry : config.entrySet()) {
 			String key = (String) entry.getKey();
@@ -201,14 +220,27 @@ public class Driver {
 			}
 		}
 
+		// Init public/private key...
+		KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
+		gen.initialize(2048);
+		KeyPair keyPair = gen.generateKeyPair();
+		RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
+		PrivateKey privateKey = keyPair.getPrivate();
+		BigInteger n = publicKey.getModulus();
+		BigInteger e = publicKey.getPublicExponent();
+		System.out.println(n);
+		System.out.println(e);
+
 		ServletContextHandler context = new ServletContextHandler(
 				ServletContextHandler.SESSIONS);
 		context.setContextPath("/");
 
-		context.addServlet(new ServletHolder(new PublicServlet()),
+		context.addServlet(new ServletHolder(new PublicServlet(n, e)),
 				"/.well-known/browserid");
-		context.addServlet(new ServletHolder(new SignServlet()), "/sign");
-		context.addServlet(new ServletHolder(new SignInServlet()), "/signin");
+		context.addServlet(new ServletHolder(new SignServlet(privateKey)),
+				"/sign");
+		context.addServlet(new ServletHolder(new SignInServlet(
+				emailToPasswordHashes)), "/signin");
 		context.addServlet(new ServletHolder(new ProvisionServlet()),
 				"/provision");
 
@@ -221,16 +253,6 @@ public class Driver {
 		handlers.setHandlers(new Handler[] { context });
 		server.setHandler(handlers);
 
-		// Init public/private key...
-		KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
-		gen.initialize(2048);
-		KeyPair keyPair = gen.generateKeyPair();
-		RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
-		privateKey = keyPair.getPrivate();
-		n = publicKey.getModulus();
-		e = publicKey.getPublicExponent();
-		System.out.println(n);
-		System.out.println(e);
 		server.start();
 		server.join();
 	}
